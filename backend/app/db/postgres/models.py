@@ -4,8 +4,11 @@ from datetime import date, datetime
 from sqlalchemy import String, Text, Integer, Float, Date, TIMESTAMP, ForeignKey, Index, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
 
 from app.db.postgres.base import Base
+
+EMBEDDING_DIM = 1024  # BAAI/bge-large-en-v1.5
 
 
 class User(Base):
@@ -170,7 +173,7 @@ class Chunk(Base):
     equipment_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
         postgresql.ARRAY(postgresql.UUID(as_uuid=True)), nullable=True
     )
-    embedding_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM), nullable=True)
     document: Mapped["Document"] = relationship(back_populates="chunks")
     entities: Mapped[list["Entity"]] = relationship(
         back_populates="chunk", cascade="all, delete-orphan"

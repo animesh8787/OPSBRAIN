@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 
 from fastapi import HTTPException, status
@@ -7,7 +6,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.simple_cache import SimpleBoundedCache, dense_search_cache
-from app.db.chroma import get_collection
 from app.db.postgres.models import Chunk, Document, Equipment
 from app.pipeline.embedding import embed_texts
 from app.schemas import SearchResult
@@ -53,65 +51,35 @@ async def dense_search(
         dense_search_cache.set(key, [])
         return []
 
-    conditions = []
+    distance = Chunk.embedding.cosine_distance(query_vector).label("distance")
+    stmt = (
+        select(Chunk, Document, distance)
+        .join(Document, Chunk.document_id == Document.id)
+        .where(Chunk.embedding.is_not(None))
+    )
     if doc_type_filter:
-        conditions.append({"doc_type": {"$in": doc_type_filter}})
+        stmt = stmt.where(Document.doc_type.in_(doc_type_filter))
     if equipment_uuids is not None:
-        conditions.append({"$or": [{"equipment_tags": {"$contains": eq_uuid}} for eq_uuid in equipment_uuids]})
+        equipment_uuid_objs = [uuid.UUID(u) for u in equipment_uuids]
+        stmt = stmt.where(Chunk.equipment_ids.op("&&")(equipment_uuid_objs))
+    stmt = stmt.order_by(distance).limit(top_k)
 
-    if len(conditions) == 0:
-        where = None
-    elif len(conditions) == 1:
-        where = conditions[0]
-    else:
-        where = {"$and": conditions}
+    result = await db.execute(stmt)
+    rows = result.all()
 
-    collection = get_collection()
-    results = await asyncio.to_thread(
-        collection.query,
-        query_embeddings=[query_vector],
-        n_results=top_k,
-        where=where,
-    )
-
-    if not results.get("ids") or not results["ids"][0]:
-        dense_search_cache.set(key, [])
-        return []
-
-    ids = results["ids"][0]
-    distances = results["distances"][0]
-    metadatas = results["metadatas"][0]
-    documents = results["documents"][0]
-
-    unique_document_ids = {m["document_id"] for m in metadatas}
-    result = await db.execute(
-        select(Document).where(Document.id.in_([uuid.UUID(d) for d in unique_document_ids]))
-    )
-    document_lookup = {str(doc.id): doc for doc in result.scalars().all()}
-
-    search_results = []
-    for i in range(len(ids)):
-        chunk_id = uuid.UUID(ids[i])
-        metadata = metadatas[i]
-        document_id_str = metadata["document_id"]
-        document = document_lookup.get(document_id_str)
-        if document is None:
-            continue
-        score = _distance_to_score(distances[i])
-        page_number = metadata["page_number"] if metadata["page_number"] != -1 else None
-        section_title = metadata["section_title"] if metadata["section_title"] else None
-        search_results.append(
-            SearchResult(
-                chunk_id=chunk_id,
-                document_id=uuid.UUID(document_id_str),
-                content=documents[i],
-                score=score,
-                page_number=page_number,
-                section_title=section_title,
-                document_filename=document.filename,
-                doc_type=document.doc_type,
-            )
+    search_results = [
+        SearchResult(
+            chunk_id=chunk.id,
+            document_id=chunk.document_id,
+            content=chunk.content,
+            score=_distance_to_score(row_distance),
+            page_number=chunk.page_number,
+            section_title=chunk.section_title,
+            document_filename=document.filename,
+            doc_type=document.doc_type,
         )
+        for chunk, document, row_distance in rows
+    ]
 
     dense_search_cache.set(key, search_results)
     return search_results

@@ -5,11 +5,11 @@ pydantic-settings
 sqlalchemy
 asyncpg
 alembic
+pgvector
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt<5.0
 python-multipart
-chromadb
 sentence-transformers
 pymupdf
 pdfplumber

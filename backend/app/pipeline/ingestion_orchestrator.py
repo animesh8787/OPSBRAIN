@@ -272,7 +272,7 @@ async def ingest_document(document_id: uuid.UUID) -> None:
             await _write_llm_fallback_results(db, document.id, llm_results)
             await _write_semantic_metadata(db, document, chunks_data)
             await _update_status(db, document, "embedding")
-            await embed_and_store(document, persisted_chunks)
+            await embed_and_store(persisted_chunks)
             await db.commit()
             await _update_status(db, document, "ready")
             bump_chunks_version()

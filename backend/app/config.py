@@ -4,7 +4,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     database_url: str
-    chroma_persist_dir: str = "./chroma_data"
     upload_dir: str = "./uploads"
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
