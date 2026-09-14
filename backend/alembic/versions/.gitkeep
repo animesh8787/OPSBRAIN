@@ -1,0 +1,2 @@
+# Placeholder to keep the versions/ directory in version control.
+# Actual migration files are generated via `alembic revision --autogenerate`.
