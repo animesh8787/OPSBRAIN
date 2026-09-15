@@ -1,5 +1,5 @@
 from app.schemas.common import ErrorDetail, ErrorResponse, ORMBase
-from app.schemas.auth import LoginRequest, TokenResponse, TokenPayload, UserResponse
+from app.schemas.auth import UserResponse
 from app.schemas.documents import (
     DocumentUploadResponse,
     DocumentResponse,
@@ -30,9 +30,6 @@ __all__ = [
     "ErrorDetail",
     "ErrorResponse",
     "ORMBase",
-    "LoginRequest",
-    "TokenResponse",
-    "TokenPayload",
     "UserResponse",
     "DocumentUploadResponse",
     "DocumentResponse",

@@ -1,11 +1,9 @@
-from uuid import UUID
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import decode_token
+from app.core.firebase import verify_firebase_token
 from app.db.postgres import get_db
 from app.db.postgres.models import User
 
@@ -16,41 +14,23 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    token = credentials.credentials
     try:
-        payload = decode_token(token)
-    except ValueError:
+        decoded = verify_firebase_token(credentials.credentials)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error": {"code": "invalid_token", "message": "Invalid or expired token"}},
         )
 
-    if payload.get("type") != "access":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"error": {"code": "wrong_token_type", "message": "Access token required"}},
-        )
+    firebase_uid = decoded["uid"]
 
-    try:
-        user_id = UUID(payload["sub"])
-    except (KeyError, ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"error": {"code": "invalid_token", "message": "Invalid or expired token"}},
-        )
-
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(select(User).where(User.firebase_uid == firebase_uid))
     user = result.scalar_one_or_none()
 
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "error": {
-                    "code": "user_not_found",
-                    "message": "User associated with this token no longer exists",
-                }
-            },
-        )
+        user = User(firebase_uid=firebase_uid, email=decoded.get("email") or f"{firebase_uid}@firebase.local")
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
     return user

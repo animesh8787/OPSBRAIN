@@ -1,7 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { login as apiLogin, ApiError } from "@/lib/api-client";
+import { FirebaseError } from "firebase/app";
+import { onIdTokenChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 type AuthContextValue = {
   token: string | null;
@@ -12,7 +14,12 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const STORAGE_KEY = "opsbrain-auth-token";
+const INVALID_CREDENTIAL_CODES = new Set([
+  "auth/invalid-credential",
+  "auth/invalid-email",
+  "auth/user-not-found",
+  "auth/wrong-password",
+]);
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
@@ -24,27 +31,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) setToken(stored);
+    return onIdTokenChanged(getFirebaseAuth(), async (user) => {
+      setToken(user ? await user.getIdToken() : null);
+    });
   }, []);
 
   async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const data = await apiLogin(null, { email, password });
-      setToken(data.access_token);
-      localStorage.setItem(STORAGE_KEY, data.access_token);
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       return { success: true };
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 401 || err.status === 400)) {
+      if (err instanceof FirebaseError && INVALID_CREDENTIAL_CODES.has(err.code)) {
         return { success: false, error: "Invalid email or password." };
       }
-      return { success: false, error: "Could not reach the login server. Is it running?" };
+      return { success: false, error: "Could not reach the authentication server." };
     }
   }
 
   function logout() {
-    setToken(null);
-    localStorage.removeItem(STORAGE_KEY);
+    signOut(getFirebaseAuth());
   }
 
   return (

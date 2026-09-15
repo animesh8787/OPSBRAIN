@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 function authHeaders(token: string | null): Record<string, string> {
   const headers: Record<string, string> = {};
@@ -15,32 +15,6 @@ export class ApiError extends Error {
     this.status = status;
     this.name = "ApiError";
   }
-}
-
-// ─── Auth ───────────────────────────────────────────────────────────────────
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  access_token: string;
-}
-
-export async function login(
-  _token: string | null,
-  credentials: LoginRequest
-): Promise<LoginResponse> {
-  const response = await fetch(`${BASE_URL}/api/v1/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(credentials),
-  });
-  if (!response.ok) {
-    throw new ApiError(response.status, `Login failed: ${response.status} ${response.statusText}`);
-  }
-  return response.json();
 }
 
 // ─── Documents ──────────────────────────────────────────────────────────────

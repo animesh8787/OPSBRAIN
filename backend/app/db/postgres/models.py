@@ -20,7 +20,7 @@ class User(Base):
         server_default=text("gen_random_uuid()"),
     )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    firebase_uid: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     role: Mapped[str] = mapped_column(String(50), nullable=False, server_default="engineer")
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), server_default=text("now()")

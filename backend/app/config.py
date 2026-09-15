@@ -5,10 +5,9 @@ class Settings(BaseSettings):
 
     database_url: str
     upload_dir: str = "./uploads"
-    jwt_secret_key: str
-    jwt_algorithm: str = "HS256"
-    jwt_access_token_expire_minutes: int = 240
-    jwt_refresh_token_expire_days: int = 7
+    firebase_project_id: str = ""
+    firebase_service_account_file: str = ""
+    firebase_service_account_json: str = ""
     max_upload_size_mb: int = 50
     allowed_upload_mime_types: list[str] = ["application/pdf"]
     cors_origins: list[str] = ["http://localhost:3000"]
