@@ -44,10 +44,10 @@ export default function NavBar() {
                       key={link.href}
                       href={link.href}
                       className={[
-                        "flex items-center gap-1.5 text-[14px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded-sm",
+                        "flex items-center gap-1.5 border-b-2 pb-[2px] text-[14px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded-sm",
                         active
-                          ? "text-text-primary border-b-2 border-accent pb-[2px]"
-                          : "text-text-secondary hover:text-text-primary",
+                          ? "text-text-primary border-accent"
+                          : "text-text-secondary hover:text-text-primary border-transparent",
                       ].join(" ")}
                     >
                       <link.icon className="h-3.5 w-3.5" />
