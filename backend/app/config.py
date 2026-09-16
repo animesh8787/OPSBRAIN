@@ -30,7 +30,11 @@ class Settings(BaseSettings):
     # list-typed field's raw env value, which raises on a blank env var (left
     # unset in .env, or an empty dashboard field on Render) instead of falling
     # back to the default - crashing the whole app at startup. Parsing it
-    # ourselves via the cors_origins property sidesteps that entirely.
+    # ourselves via the cors_origins property sidesteps that entirely, and
+    # also lets us tolerate a bare URL (or comma-separated URLs) pasted in
+    # without the ["..."] JSON wrapper - a very easy mistake to make in a
+    # dashboard text field, and one that crashed the app on Render for
+    # exactly that reason.
     cors_origins_json: str = Field(default="", validation_alias="CORS_ORIGINS")
 
     ollama_base_url: str = "http://localhost:11434"
@@ -42,8 +46,12 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        if not self.cors_origins_json.strip():
+        raw = self.cors_origins_json.strip()
+        if not raw:
             return ["http://localhost:3000"]
-        return json.loads(self.cors_origins_json)
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 settings = Settings()
