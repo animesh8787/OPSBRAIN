@@ -10,7 +10,7 @@ from app.pipeline.llm_fallback_extraction import extract_llm_fallback, LLMFallba
 logger = logging.getLogger(__name__)
 
 EQUIPMENT_TAG_PATTERN = re.compile(r'\b[A-Z]{1,3}-\d{2,4}[A-Z]?\b')
-REGULATION_PATTERN = re.compile(r'\b(?:OSHA|API|ASME|ISO)\s?\d{3,5}[-\w]*\b')
+REGULATION_PATTERN = re.compile(r'\b(?:OSHA|API|ASME|ISO)[\s-]?\d{3,5}[-\w]*\b')
 
 REGEX_MATCH_CONFIDENCE = 0.95
 

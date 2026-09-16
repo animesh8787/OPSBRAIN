@@ -4,6 +4,7 @@ import re
 from langgraph.graph import StateGraph, END
 from agents.graph_state import AgentState
 from agents.copilot_agent import generate_answer
+from agents.compliance_agent import generate_compliance_answer
 from app.llm.generate import generate
 from rag.citation import extract_and_verify_citations
 from rag.reranker import rerank
@@ -65,6 +66,13 @@ async def copilot_agent_node(state: AgentState) -> AgentState:
     return {**state, "answer": answer}
 
 
+async def compliance_agent_node(state: AgentState) -> AgentState:
+    answer = await generate_compliance_answer(
+        state["query"], state["graph_context"], state["retrieved_chunks"]
+    )
+    return {**state, "answer": answer}
+
+
 async def generate_citations_node(state: AgentState) -> AgentState:
     cleaned_answer, citations = extract_and_verify_citations(
         state["answer"], state["retrieved_chunks"]
@@ -78,6 +86,7 @@ def build_graph():
     graph.add_node("retrieve", retrieve_node)
     graph.add_node("graph_lookup", graph_lookup_node)
     graph.add_node("copilot_agent", copilot_agent_node)
+    graph.add_node("compliance_agent", compliance_agent_node)
     graph.add_node("generate_citations", generate_citations_node)
 
     graph.set_entry_point("classify_intent")
@@ -89,10 +98,11 @@ def build_graph():
         {
             "copilot": "copilot_agent",
             "maintenance": "copilot_agent",
-            "compliance": "copilot_agent",
+            "compliance": "compliance_agent",
         },
     )
     graph.add_edge("copilot_agent", "generate_citations")
+    graph.add_edge("compliance_agent", "generate_citations")
     graph.add_edge("generate_citations", END)
 
     return graph.compile()
