@@ -1,5 +1,17 @@
 import re
 
+# Some models (observed with Groq's openai/gpt-oss-20b) render citation
+# brackets as full-width/CJK punctuation instead of ASCII square brackets -
+# e.g. "【2】" instead of "[2]" - even when explicitly asked for
+# "[n]". Normalize the common look-alikes before matching so a citation the
+# model clearly intended isn't silently dropped just because of glyph choice.
+_BRACKET_NORMALIZE = str.maketrans({
+    "【": "[",  # 【
+    "】": "]",  # 】
+    "［": "[",  # ［
+    "］": "]",  # ］
+})
+
 
 def extract_and_verify_citations(
     answer: str,
@@ -12,6 +24,7 @@ def extract_and_verify_citations(
     from the answer text rather than left as a broken/dangling reference -
     this must never surface an unverified citation live during a demo.
     """
+    answer = answer.translate(_BRACKET_NORMALIZE)
     pattern = re.compile(r"\[(\d+)\]")
     citations = []
     seen_indices = set()
