@@ -29,6 +29,14 @@ def _extract_regex_entities(chunk: ChunkData) -> list[ExtractedEntity]:
     entities = []
 
     for match in EQUIPMENT_TAG_PATTERN.finditer(chunk.content):
+        # A regulation code like "API-570" also matches the equipment tag
+        # shape ([A-Z]{1,3}-\d{2,4}) - don't double-classify it as equipment
+        # too, or it ends up as a spurious equipment row that a later
+        # co-occurrence pairing can link the regulation to instead of the
+        # real equipment tag (regulations.equipment_id is a single FK, so
+        # whichever pairing gets processed last wins).
+        if REGULATION_PATTERN.fullmatch(match.group()):
+            continue
         normalized = match.group().strip().upper()
         key = ("equipment", normalized)
         if key not in seen:
