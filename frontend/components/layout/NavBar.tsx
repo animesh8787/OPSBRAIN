@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { FileStack, MessageSquare, Network } from "lucide-react";
 import Container from "./Container";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 
 type NavLink = { label: string; href: string; icon: React.ComponentType<{ className?: string }> };
@@ -23,14 +24,14 @@ export default function NavBar() {
   const { isAuthenticated, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 h-14 bg-surface border-b border-border-subtle">
+    <header className="sticky top-0 z-40 h-16 bg-surface border-b border-border-subtle">
       <Container>
         <div className="flex h-full items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-surface">
-              <Network className="h-3.5 w-3.5" />
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-accent text-surface">
+              <Network className="h-4 w-4" />
             </span>
-            <span className="font-display text-[15px] font-medium tracking-tight text-text-primary">
+            <span className="font-display text-[16px] font-medium tracking-tight text-text-primary">
               OpsBrain
             </span>
           </Link>
@@ -59,20 +60,13 @@ export default function NavBar() {
             )}
             <ThemeToggle />
             {isAuthenticated ? (
-              <button
-                type="button"
-                onClick={logout}
-                className="text-[14px] font-medium text-text-secondary hover:text-text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded-sm"
-              >
+              <Button type="button" variant="secondary" onClick={logout}>
                 Log out
-              </button>
+              </Button>
             ) : (
-              <Link
-                href="/login"
-                className="text-[14px] font-medium text-text-secondary hover:text-text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded-sm"
-              >
+              <Button href="/login" variant="secondary">
                 Log in
-              </Link>
+              </Button>
             )}
           </div>
         </div>

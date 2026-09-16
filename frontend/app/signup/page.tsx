@@ -7,8 +7,8 @@ import { ArrowLeft, Network, TriangleAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import PasswordInput from "@/components/ui/PasswordInput";
 
-export default function LoginPage() {
-  const { login } = useAuth();
+export default function SignupPage() {
+  const { signup } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,12 +19,12 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const result = await login(email, password);
+    const result = await signup(email, password);
     setLoading(false);
     if (result.success) {
       router.push("/documents");
     } else {
-      setError(result.error ?? "Login failed.");
+      setError(result.error ?? "Could not create your account.");
     }
   }
 
@@ -47,10 +47,10 @@ export default function LoginPage() {
           <Network className="h-5 w-5" />
         </span>
         <h1 className="font-display text-[28px] leading-[36px] font-medium text-text-primary mb-1">
-          Sign in
+          Create an account
         </h1>
         <p className="text-[14px] text-text-secondary mb-6">
-          Access the console to ask questions and manage documents.
+          Set up access to ask questions and manage documents.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -62,6 +62,7 @@ export default function LoginPage() {
               id="email"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="text-[15px] px-4 py-2.5 rounded-md border border-border-default bg-surface text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
@@ -74,10 +75,11 @@ export default function LoginPage() {
             <PasswordInput
               id="password"
               required
-              autoComplete="current-password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <p className="text-[12px] text-text-tertiary">At least 6 characters.</p>
           </div>
           {error && (
             <p className="flex items-center gap-1.5 text-[13px] text-error">
@@ -90,17 +92,17 @@ export default function LoginPage() {
             disabled={loading}
             className="text-[14px] font-medium px-4 py-2.5 rounded-md bg-accent text-surface hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed mt-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 
         <p className="mt-6 text-[13px] text-text-secondary">
-          Don&apos;t have an account?{" "}
+          Already have an account?{" "}
           <Link
-            href="/signup"
+            href="/login"
             className="font-medium text-text-primary hover:text-accent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded-sm"
           >
-            Sign up
+            Sign in
           </Link>
         </p>
       </div>
