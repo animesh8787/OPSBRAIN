@@ -114,7 +114,7 @@ export async function sendChatMessage(
   token: string | null,
   query: string
 ): Promise<ChatResponse> {
-  const response = await fetch(`${BASE_URL}/chat`, {
+  const response = await fetch(`${BASE_URL}/api/v1/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

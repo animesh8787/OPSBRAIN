@@ -1,14 +1,11 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
 from agents.orchestrator import run_copilot_query
+from app.core.dependencies import get_current_user
+from app.db.postgres.models import User
 
-router = APIRouter(prefix="/chat", tags=["chat"])
-
-
-def extract_token(authorization: str | None) -> str:
-    if authorization and authorization.startswith("Bearer "):
-        return authorization[len("Bearer "):]
-    return ""
+router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
 
 class ChatRequest(BaseModel):
@@ -32,12 +29,12 @@ class ChatResponse(BaseModel):
 
 
 @router.post("", response_model=ChatResponse)
-async def chat(request: ChatRequest, authorization: str | None = Header(default=None)) -> ChatResponse:
+async def chat(request: ChatRequest, current_user: User = Depends(get_current_user)) -> ChatResponse:
     if not request.query or not request.query.strip():
         raise HTTPException(status_code=400, detail="query must not be empty")
 
     try:
-        result = await run_copilot_query(request.query, auth_token=extract_token(authorization))
+        result = await run_copilot_query(request.query)
     except Exception as exc:
         # The pipeline's own error handling is a future task (Ollama failures,
         # Data Service unreachable, etc). For now, surface a generic 500 rather
