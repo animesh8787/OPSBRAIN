@@ -5,6 +5,9 @@ class Settings(BaseSettings):
 
     database_url: str
     upload_dir: str = "./uploads"
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    supabase_storage_bucket: str = "documents"
     firebase_project_id: str = ""
     firebase_service_account_file: str = ""
     firebase_service_account_json: str = ""

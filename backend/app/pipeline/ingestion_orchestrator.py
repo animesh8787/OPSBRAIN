@@ -1,7 +1,9 @@
 """Single async entrypoint for document ingestion. Populated in a later task."""
 
 import logging
+import tempfile
 import uuid
+from pathlib import Path
 
 from sqlalchemy import and_, delete, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -31,6 +33,7 @@ from app.pipeline.spreadsheet_parsing import parse_spreadsheet, needs_spreadshee
 from app.pipeline.email_parsing import parse_email, needs_email_parsing
 from app.services.graph_service import upsert_equipment
 from app.services.search_service import bump_chunks_version
+from app.services.storage_service import download_to_local_path
 
 logger = logging.getLogger(__name__)
 
@@ -245,12 +248,18 @@ async def ingest_document(document_id: uuid.UUID) -> None:
 
             await _clear_existing_ingestion_data(db, document.id)
             await _update_status(db, document, "ocr")
-            if needs_email_parsing(document.file_path):
-                parsed_pages = parse_email(document.file_path)
-            elif needs_spreadsheet_parsing(document.file_path):
-                parsed_pages = parse_spreadsheet(document.file_path)
-            else:
-                parsed_pages = await parse_document(document.file_path)
+
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                suffix = Path(document.filename).suffix or ".pdf"
+                local_path = str(Path(tmp_dir) / f"{document.id}{suffix}")
+                await download_to_local_path(document.file_path, local_path)
+
+                if needs_email_parsing(local_path):
+                    parsed_pages = parse_email(local_path)
+                elif needs_spreadsheet_parsing(local_path):
+                    parsed_pages = parse_spreadsheet(local_path)
+                else:
+                    parsed_pages = await parse_document(local_path)
 
             # Detect and restructure form-style pages
             for page in parsed_pages:

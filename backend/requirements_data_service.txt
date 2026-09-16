@@ -7,6 +7,7 @@ asyncpg
 alembic
 pgvector
 firebase-admin
+httpx
 python-multipart
 sentence-transformers
 pymupdf

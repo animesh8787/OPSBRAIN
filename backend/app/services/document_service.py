@@ -1,7 +1,6 @@
-import aiofiles
 import asyncio
 import base64
-import os
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -12,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.postgres.models import Document
+from app.services.storage_service import download_to_local_path, save_document_bytes
 
 
 def validate_upload(file: UploadFile) -> None:
@@ -28,35 +28,28 @@ def validate_upload(file: UploadFile) -> None:
 
 
 async def save_upload_file(file: UploadFile, document_id: uuid.UUID) -> str:
-    os.makedirs(settings.upload_dir, exist_ok=True)
-    dest_path = Path(settings.upload_dir) / f"{document_id}.pdf"
-    total_bytes = 0
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    chunks = []
+    total_bytes = 0
 
-    try:
-        async with aiofiles.open(dest_path, "wb") as out:
-            while True:
-                chunk = await file.read(1024 * 1024)
-                if not chunk:
-                    break
-                total_bytes += len(chunk)
-                if total_bytes > max_bytes:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail={
-                            "error": {
-                                "code": "file_too_large",
-                                "message": f"File exceeds maximum size of {settings.max_upload_size_mb}MB",
-                            }
-                        },
-                    )
-                await out.write(chunk)
-    except HTTPException:
-        if dest_path.exists():
-            dest_path.unlink()
-        raise
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total_bytes += len(chunk)
+        if total_bytes > max_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": {
+                        "code": "file_too_large",
+                        "message": f"File exceeds maximum size of {settings.max_upload_size_mb}MB",
+                    }
+                },
+            )
+        chunks.append(chunk)
 
-    return str(dest_path)
+    return await save_document_bytes(document_id, b"".join(chunks))
 
 
 async def create_document_record(
@@ -124,7 +117,10 @@ async def get_document_page(db: AsyncSession, document_id: uuid.UUID, page_numbe
         return text, image_data_uri
 
     try:
-        text, image_data_uri = await asyncio.to_thread(_extract_page_sync, document.file_path, page_number)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            local_path = str(Path(tmp_dir) / f"{document.id}.pdf")
+            await download_to_local_path(document.file_path, local_path)
+            text, image_data_uri = await asyncio.to_thread(_extract_page_sync, local_path, page_number)
     except HTTPException:
         raise
     except Exception:
