@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 50
     allowed_upload_mime_types: list[str] = ["application/pdf"]
 
+    # Embeddings run through HF's hosted Inference API rather than a local
+    # sentence-transformers model - loading BAAI/bge-large-en-v1.5 locally
+    # (or even the smallest viable alternative) needs ~500MB+ RSS just for
+    # torch + the model weights, which alone exceeds Render's free-tier
+    # 512MB limit before the rest of the app even loads. Get a free token
+    # at huggingface.co/settings/tokens (read access is enough).
+    hf_token: str = ""
+    embedding_model: str = "BAAI/bge-large-en-v1.5"
+
     # Plain string, not list[str]: pydantic-settings tries to JSON-decode any
     # list-typed field's raw env value, which raises on a blank env var (left
     # unset in .env, or an empty dashboard field on Render) instead of falling

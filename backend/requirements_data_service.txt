@@ -9,7 +9,6 @@ pgvector
 firebase-admin
 httpx
 python-multipart
-sentence-transformers
 pymupdf
 pdfplumber
 pytesseract
