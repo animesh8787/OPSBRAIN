@@ -1,3 +1,6 @@
+import json
+
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -13,7 +16,13 @@ class Settings(BaseSettings):
     firebase_service_account_json: str = ""
     max_upload_size_mb: int = 50
     allowed_upload_mime_types: list[str] = ["application/pdf"]
-    cors_origins: list[str] = ["http://localhost:3000"]
+
+    # Plain string, not list[str]: pydantic-settings tries to JSON-decode any
+    # list-typed field's raw env value, which raises on a blank env var (left
+    # unset in .env, or an empty dashboard field on Render) instead of falling
+    # back to the default - crashing the whole app at startup. Parsing it
+    # ourselves via the cors_origins property sidesteps that entirely.
+    cors_origins_json: str = Field(default="", validation_alias="CORS_ORIGINS")
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:3b"
@@ -21,5 +30,11 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_model: str = "llama-3.1-8b-instant"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        if not self.cors_origins_json.strip():
+            return ["http://localhost:3000"]
+        return json.loads(self.cors_origins_json)
 
 settings = Settings()
