@@ -18,7 +18,14 @@ def _object_url(key: str) -> str:
 
 
 def _auth_headers() -> dict:
-    return {"Authorization": f"Bearer {settings.supabase_service_role_key}"}
+    # Both headers on purpose: Supabase's newer opaque "secret key" format
+    # (sb_secret_...) is only accepted via the apikey header - sent as a
+    # Bearer token it 400s with "Invalid Compact JWS", since that path
+    # expects an actual JWT. The legacy service_role key *is* a JWT and
+    # works fine as a Bearer token, so keep sending both for compatibility
+    # with either key format.
+    key = settings.supabase_service_role_key
+    return {"apikey": key, "Authorization": f"Bearer {key}"}
 
 
 async def save_document_bytes(document_id, content: bytes) -> str:
