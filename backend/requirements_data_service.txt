@@ -12,6 +12,7 @@ sentence-transformers
 pymupdf
 pdfplumber
 pytesseract
+openpyxl
 email-validator
 aiofiles
 rank-bm25
