@@ -8,6 +8,8 @@ backend/.env.*
 !backend/.env.example
 backend/chroma_data/
 backend/uploads/
+backend/firebase-service-account.json
+backend/*firebase-adminsdk*.json
 *.pyc
 
 # Frontend
